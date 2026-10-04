@@ -1,6 +1,8 @@
 name: Feature
 description: 새로운 기능이나 동작을 제안합니다.
 type: Feature
+projects:
+  - ORBIT-CLOUD-LABS/4
 
 body:
   - type: textarea
