@@ -1,6 +1,8 @@
 name: Bug
 description: 의도와 다르게 동작하는 문제를 보고합니다.
 type: Bug
+projects:
+  - ORBIT-CLOUD-LABS/4
 
 body:
   - type: textarea
