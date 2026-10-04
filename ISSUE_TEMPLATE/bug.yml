@@ -1,0 +1,38 @@
+name: Bug
+description: 의도와 다르게 동작하는 문제를 보고합니다.
+type: Bug
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: 현재 동작, 기대 동작과 재현 조건을 작성합니다.
+      placeholder: |
+        현재 동작:
+        기대 동작:
+        재현 조건:
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: 원인 확인, 수정 및 회귀 검증 항목을 작성합니다.
+      placeholder: |
+        - [ ] 원인 확인
+        - [ ] 문제 수정
+        - [ ] 회귀 검증
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: 로그, 화면, 관련 문서, Issue 또는 PR을 작성합니다.
+      placeholder: |
+        - 로그:
+        - 관련 문서:
+        - 관련 Issue:

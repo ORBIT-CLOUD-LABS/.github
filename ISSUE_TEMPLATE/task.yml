@@ -1,0 +1,35 @@
+name: Task
+description: 구현, 설정, 문서화 또는 유지보수 작업을 등록합니다.
+type: Task
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: 작업 목적과 결과물의 범위를 작성합니다.
+      placeholder: |
+        작업이 필요한 이유와 완료 후 만들어질 결과를 작성합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: 수행할 작업과 검증 항목을 작성합니다.
+      placeholder: |
+        - [ ] 작업 항목
+        - [ ] 테스트 또는 검증
+        - [ ] 관련 문서 반영
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: 관련 문서, Issue, PR 또는 외부 자료를 작성합니다.
+      placeholder: |
+        - 관련 문서:
+        - 관련 Issue:

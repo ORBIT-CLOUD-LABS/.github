@@ -1,0 +1,36 @@
+name: Feature
+description: 새로운 기능이나 동작을 제안합니다.
+type: Feature
+
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: 기능이 필요한 이유와 구현할 범위를 작성합니다.
+      placeholder: |
+        해결하려는 문제와 구현할 기능을 작성합니다.
+        범위에서 제외할 내용이 있다면 함께 작성합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: tasks
+    attributes:
+      label: Tasks
+      description: 완료해야 할 작업과 검증 항목을 작성합니다.
+      placeholder: |
+        - [ ] 구현 작업
+        - [ ] 테스트 또는 검증
+        - [ ] 관련 문서 반영
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: 관련 문서, Issue, PR 또는 외부 자료를 작성합니다.
+      placeholder: |
+        - 관련 문서:
+        - 관련 Issue:
