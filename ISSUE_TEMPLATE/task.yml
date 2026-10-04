@@ -1,6 +1,8 @@
 name: Task
 description: 구현, 설정, 문서화 또는 유지보수 작업을 등록합니다.
 type: Task
+projects:
+  - ORBIT-CLOUD-LABS/4
 
 body:
   - type: textarea
