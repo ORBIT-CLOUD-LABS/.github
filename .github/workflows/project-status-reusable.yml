@@ -1,0 +1,338 @@
+name: Reusable Project Status
+
+on:
+  workflow_call:
+    inputs:
+      project_owner:
+        required: true
+        type: string
+      project_number:
+        required: true
+        type: number
+      app_client_id:
+        required: true
+        type: string
+    secrets:
+      app_private_key:
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  update-project-status:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Create GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ inputs.app_client_id }}
+          private-key: ${{ secrets.app_private_key }}
+          owner: ${{ inputs.project_owner }}
+
+      - name: Update Project status
+        uses: actions/github-script@v9
+        env:
+          PROJECT_OWNER: ${{ inputs.project_owner }}
+          PROJECT_NUMBER: ${{ inputs.project_number }}
+        with:
+          github-token: ${{ steps.app-token.outputs.token }}
+          retries: 3
+          script: |
+            const projectOwner = process.env.PROJECT_OWNER;
+            const projectNumber = Number(process.env.PROJECT_NUMBER);
+
+            let statusName;
+            let issues = [];
+
+            if (context.eventName === "issues") {
+              const action = context.payload.action;
+
+              if (action === "opened" || action === "reopened") {
+                statusName = "Todo";
+              } else if (action === "closed") {
+                statusName = "Done";
+              } else {
+                return;
+              }
+
+              issues.push({
+                id: context.payload.issue.node_id,
+                number: context.payload.issue.number,
+                repository: context.payload.repository.full_name,
+                state: context.payload.issue.state.toUpperCase()
+              });
+            }
+
+            if (context.eventName === "create") {
+              if (context.payload.ref_type !== "branch") {
+                return;
+              }
+
+              const branch = context.payload.ref;
+              const match = branch.match(
+                /^(feature|bug|task)\/(\d+)-[a-z0-9]+(?:-[a-z0-9]+)*$/
+              );
+
+              if (!match) {
+                core.notice(`관리 대상 브랜치가 아닙니다: ${branch}`);
+                return;
+              }
+
+              const issueNumber = Number(match[2]);
+
+              const result = await github.graphql(
+                `
+                  query($owner: String!, $name: String!, $number: Int!) {
+                    repository(owner: $owner, name: $name) {
+                      issue(number: $number) {
+                        id
+                        number
+                        state
+                        repository {
+                          nameWithOwner
+                        }
+                      }
+                    }
+                  }
+                `,
+                {
+                  owner: context.repo.owner,
+                  name: context.repo.repo,
+                  number: issueNumber
+                }
+              );
+
+              const issue = result.repository.issue;
+
+              if (!issue) {
+                core.setFailed(`Issue #${issueNumber}를 찾을 수 없습니다.`);
+                return;
+              }
+
+              if (issue.state === "CLOSED") {
+                core.notice(`Issue #${issueNumber}는 이미 닫혀 있습니다.`);
+                return;
+              }
+
+              statusName = "In Progress";
+              issues.push({
+                id: issue.id,
+                number: issue.number,
+                repository: issue.repository.nameWithOwner,
+                state: issue.state
+              });
+            }
+
+            if (context.eventName === "pull_request") {
+              const pullRequest = context.payload.pull_request;
+
+              if (
+                context.payload.action === "closed" &&
+                pullRequest.merged
+              ) {
+                statusName = "Done";
+              } else if (context.payload.action === "closed") {
+                statusName = "In Progress";
+              } else {
+                statusName = "In Review";
+              }
+
+              const result = await github.graphql(
+                `
+                  query($owner: String!, $name: String!, $number: Int!) {
+                    repository(owner: $owner, name: $name) {
+                      pullRequest(number: $number) {
+                        closingIssuesReferences(first: 20) {
+                          nodes {
+                            id
+                            number
+                            state
+                            repository {
+                              nameWithOwner
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `,
+                {
+                  owner: context.repo.owner,
+                  name: context.repo.repo,
+                  number: pullRequest.number
+                }
+              );
+
+              issues = result.repository.pullRequest
+                .closingIssuesReferences.nodes
+                .map(issue => ({
+                  id: issue.id,
+                  number: issue.number,
+                  repository: issue.repository.nameWithOwner,
+                  state: issue.state
+                }));
+
+              if (statusName !== "Done") {
+                issues = issues.filter(issue => issue.state === "OPEN");
+              }
+
+              if (issues.length === 0) {
+                core.notice(
+                  "PR에서 Closes #<issue-number>로 연결된 Issue를 찾지 못했습니다."
+                );
+                return;
+              }
+            }
+
+            if (!statusName || issues.length === 0) {
+              return;
+            }
+
+            issues = [
+              ...new Map(issues.map(issue => [issue.id, issue])).values()
+            ];
+
+            const projectResult = await github.graphql(
+              `
+                query($owner: String!, $number: Int!) {
+                  organization(login: $owner) {
+                    projectV2(number: $number) {
+                      id
+                      fields(first: 100) {
+                        nodes {
+                          ... on ProjectV2SingleSelectField {
+                            id
+                            name
+                            options {
+                              id
+                              name
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              `,
+              {
+                owner: projectOwner,
+                number: projectNumber
+              }
+            );
+
+            const project = projectResult.organization.projectV2;
+
+            if (!project) {
+              core.setFailed(`Project #${projectNumber}를 찾을 수 없습니다.`);
+              return;
+            }
+
+            const statusField = project.fields.nodes.find(
+              field => field?.name === "Status"
+            );
+
+            if (!statusField) {
+              core.setFailed("Status 필드를 찾을 수 없습니다.");
+              return;
+            }
+
+            const statusOption = statusField.options.find(
+              option => option.name === statusName
+            );
+
+            if (!statusOption) {
+              core.setFailed(`Status 옵션 '${statusName}'을 찾을 수 없습니다.`);
+              return;
+            }
+
+            for (const issue of issues) {
+              const itemResult = await github.graphql(
+                `
+                  query($issueId: ID!) {
+                    node(id: $issueId) {
+                      ... on Issue {
+                        projectItems(first: 50, includeArchived: true) {
+                          nodes {
+                            id
+                            project {
+                              id
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `,
+                {
+                  issueId: issue.id
+                }
+              );
+
+              let item = itemResult.node.projectItems.nodes.find(
+                candidate => candidate.project.id === project.id
+              );
+
+              if (!item) {
+                const addResult = await github.graphql(
+                  `
+                    mutation($projectId: ID!, $contentId: ID!) {
+                      addProjectV2ItemById(
+                        input: {
+                          projectId: $projectId
+                          contentId: $contentId
+                        }
+                      ) {
+                        item {
+                          id
+                        }
+                      }
+                    }
+                  `,
+                  {
+                    projectId: project.id,
+                    contentId: issue.id
+                  }
+                );
+
+                item = addResult.addProjectV2ItemById.item;
+              }
+
+              await github.graphql(
+                `
+                  mutation(
+                    $projectId: ID!
+                    $itemId: ID!
+                    $fieldId: ID!
+                    $optionId: String!
+                  ) {
+                    updateProjectV2ItemFieldValue(
+                      input: {
+                        projectId: $projectId
+                        itemId: $itemId
+                        fieldId: $fieldId
+                        value: {
+                          singleSelectOptionId: $optionId
+                        }
+                      }
+                    ) {
+                      projectV2Item {
+                        id
+                      }
+                    }
+                  }
+                `,
+                {
+                  projectId: project.id,
+                  itemId: item.id,
+                  fieldId: statusField.id,
+                  optionId: statusOption.id
+                }
+              );
+
+              core.info(
+                `${issue.repository}#${issue.number}: ${statusName}`
+              );
+            }
