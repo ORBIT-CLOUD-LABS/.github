@@ -30,6 +30,7 @@ Issue → Branch → Commit → Push → Pull Request → Review → Merge
 - 모든 작업은 Issue를 먼저 생성한 후 시작합니다.
 - Issue 하나에는 하나의 명확한 결과만 포함합니다.
 - Issue Type은 `Feature`, `Bug`, `Task` 중 하나를 선택합니다.
+- Issue Title의 접두어는 [{IssueType.upperCase}]입니다.
 - Repository별 `area:*` Label을 기본으로 하나 선택합니다.
 - 필요한 경우에만 `work:*`, `needs:decision`, `cross-repo`, `risk:security` Label을 추가합니다.
 
