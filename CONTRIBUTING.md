@@ -33,6 +33,7 @@ Issue → Branch → Commit → Push → Pull Request → Review → Merge
 - Issue Title의 접두어는 [{IssueType.upperCase}]입니다.
 - Repository별 `area:*` Label을 기본으로 하나 선택합니다.
 - 필요한 경우에만 `work:*`, `needs:decision`, `cross-repo`, `risk:security` Label을 추가합니다.
+- 다른 Issue가 끝나야 시작할 수 있는 작업은 `Blocked by`로 선행 Issue를 연결합니다. 사용 방법은 [Issue 의존성 사용 안내](https://github.com/ORBIT-CLOUD-LABS/.github/blob/main/docs/issue-dependencies.md)를 참고합니다.
 
 ### 2. Branch
 
