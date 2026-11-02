@@ -1,0 +1,37 @@
+name: Epic
+description: 주차별 주제 목표를 등록하고 Sub-issue로 작업을 묶습니다.
+title: "[W] "
+labels:
+  - epic
+projects:
+  - ORBIT-CLOUD-LABS/4
+
+body:
+  - type: textarea
+    id: overview
+    attributes:
+      label: Overview
+      description: 이 Epic의 목표를 한두 문장으로 작성합니다.
+      placeholder: |
+        이번 주에 무엇을 왜 하는지 작성합니다.
+    validations:
+      required: true
+
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: 포함되는 작업 범위를 한 줄씩 작성합니다. 세부 내용은 Sub-issue에서 관리합니다.
+      placeholder: |
+        - 작업 범위 1
+        - 작업 범위 2
+    validations:
+      required: true
+
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: 관련 문서나 이전 Epic을 작성합니다.
+      placeholder: |
+        - 관련 문서:
